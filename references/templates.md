@@ -60,7 +60,7 @@ deploy:
   needs:
     - { job: build-backend, optional: true }
     - { job: build-frontend, optional: true }
-  environment: { name: production, url: "https://<domain>" }
+  environment: { name: <environment>, url: "https://<domain>" }
   variables:
     COMPOSE_FILE: docker-compose.yml
   before_script:
@@ -98,7 +98,7 @@ runner ต้องเป็น executor แบบ shell (หรือ docker �
 
 ```yaml
 variables:
-  SWARMPIT_STACK_NAME: <stack เช่น uat-<project>>
+  SWARMPIT_STACK_NAME: <project>
 
 deploy:
   stage: deploy
@@ -167,7 +167,7 @@ services:
     labels:
       traefik.enable: 'true'
       traefik.docker.network: public
-      traefik.http.routers.<project>-frontend.entrypoints: websecure
+      traefik.http.routers.<project>-frontend.entrypoints: <entrypoint>
       traefik.http.routers.<project>-frontend.rule: Host(`<domain>`)
       traefik.http.routers.<project>-frontend.tls: 'true'
       traefik.http.routers.<project>-frontend.tls.certresolver: <certresolver>
@@ -186,7 +186,7 @@ services:
     labels:
       traefik.enable: 'true'
       traefik.docker.network: public
-      traefik.http.routers.<project>-backend.entrypoints: websecure
+      traefik.http.routers.<project>-backend.entrypoints: <entrypoint>
       traefik.http.routers.<project>-backend.rule: Host(`<domain>`) && PathPrefix(`/api`)
       traefik.http.routers.<project>-backend.tls: 'true'
       traefik.http.routers.<project>-backend.tls.certresolver: <certresolver>
@@ -229,11 +229,11 @@ services:
         constraints: [node.labels.<label> == true]
       labels:
         traefik.enable: 'true'
-        traefik.http.routers.<project>-backend-<env>.entrypoints: websecure
-        traefik.http.routers.<project>-backend-<env>.rule: Host(`<backend-domain>`)
-        traefik.http.routers.<project>-backend-<env>.tls: 'true'
-        traefik.http.routers.<project>-backend-<env>.tls.certresolver: <certresolver>
-        traefik.http.services.<project>-backend-<env>.loadbalancer.server.port: '3000'
+        traefik.http.routers.<project>-backend.entrypoints: <entrypoint>
+        traefik.http.routers.<project>-backend.rule: Host(`<backend-domain>`)
+        traefik.http.routers.<project>-backend.tls: 'true'
+        traefik.http.routers.<project>-backend.tls.certresolver: <certresolver>
+        traefik.http.services.<project>-backend.loadbalancer.server.port: '3000'
       update_config:
         parallelism: 1
         delay: 30s

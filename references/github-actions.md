@@ -117,7 +117,7 @@ cache แบบ `type=gha` เก็บ cache ของทุก stage ไว้
     if: always() && !failure() && !cancelled() && needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     concurrency: { group: deploy, cancel-in-progress: false }
-    environment: { name: production, url: "https://<domain>" }
+    environment: { name: <environment>, url: "https://<domain>" }
     env:
       DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}

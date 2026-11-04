@@ -154,7 +154,7 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 - env ที่ไม่ลับและไม่เปลี่ยนเขียนค่าตรง ๆ (`TZ=<timezone>`, domain, bucket) ค่าลับหรือค่าต่อเครื่องเขียน `VAR=${VAR}`
 - service ที่ใช้ env ชุดเดียวกัน (api, worker, migrate) ใช้ anchor `x-backend: &backend`
 - network ภายนอกประกาศ `external: true` service ที่รับ traffic อยู่ใน `public` และตั้ง `traefik.docker.network: public` (แบบ A และ C) เมื่ออยู่หลาย network
-- ชื่อ router/service ของ Traefik ขึ้นต้นด้วยชื่อโปรเจกต์ (และ env เช่น `-uat`) กันชนกับ stack อื่น
+- ชื่อ router/service ของ Traefik ขึ้นต้นด้วยชื่อโปรเจกต์กันชนกับ stack อื่น ถ้า cluster เดียวมีหลาย environment ของโปรเจกต์เดียวกัน ให้ถามผู้ใช้ว่าจะต่อชื่อ environment แบบไหน
 - service ที่เรียกกันภายในใช้ alias ที่ขึ้นต้นด้วยชื่อโปรเจกต์ (เช่น `<project>-backend`) เพราะ network `public` มีหลาย stack ที่มี service ชื่อ `backend`
 
 **compose ของเครื่องพัฒนา** (เฉพาะเมื่อผู้ใช้เลือกเอาในขั้น 2)
