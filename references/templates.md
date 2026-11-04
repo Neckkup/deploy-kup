@@ -3,7 +3,7 @@
 แทน `<...>` ด้วยค่าของโปรเจกต์ ตัดส่วนที่โปรเจกต์ไม่มี (worker, migrate, S3) และเพิ่ม service ตามที่มีจริง
 เวอร์ชันของ image ในแม่แบบเป็นตัวอย่าง ให้ใช้เวอร์ชันล่าสุดที่ repo ใช้อยู่หรือที่ผู้ใช้เลือก
 
-## .gitlab-ci.yml: ส่วน build (ใช้ทั้งแบบ A และ B)
+## .gitlab-ci.yml: ส่วน build (ใช้ทุกแบบ)
 
 ```yaml
 stages: [build, deploy]
@@ -42,7 +42,7 @@ build-backend:
 # และ Dockerfile ต้องมี ARG NAME + ENV NAME=$NAME ก่อนคำสั่ง build
 ```
 
-## .gitlab-ci.yml: deploy แบบ A (เครื่องเดียว ผ่าน SSH)
+## .gitlab-ci.yml: deploy แบบ A (Linux server/VM ผ่าน SSH) และ C
 
 ```yaml
 deploy:
@@ -85,6 +85,14 @@ deploy:
 ```
 
 compose ถูกแทนค่าตัวแปรที่ฝั่ง CI แล้วส่งให้ Docker บนเครื่องปลายทาง จึงไม่ต้องวางไฟล์หรือ `.env` บนเครื่อง
+
+**แบบ C (runner บนเครื่องปลายทาง):** job เดียวกันแต่
+```yaml
+deploy:
+  tags: [<tag ของ runner บนเครื่องปลายทาง>]
+  # ลบ before_script ส่วน SSH และ DOCKER_HOST ทิ้ง docker compose รันบนเครื่องนี้ตรง ๆ
+```
+runner ต้องเป็น executor แบบ shell (หรือ docker ที่ mount `/var/run/docker.sock`) และ user ของ runner อยู่ในกลุ่ม `docker`
 
 ## .gitlab-ci.yml: deploy แบบ B (Swarm ผ่าน Swarmpit)
 
@@ -131,7 +139,7 @@ deploy:
 
 `envsubst` แทนทุก `$VAR` ในไฟล์ ถ้า compose มี `$` ที่ไม่ใช่ตัวแปร (เช่นใน label) ให้จำกัดชื่อ: `envsubst '$BACKEND_IMAGE $DATABASE_URL ...'`
 
-## docker-compose.yml: แบบ A
+## docker-compose.yml: แบบ A และ C
 
 ```yaml
 name: <project>

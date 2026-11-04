@@ -55,15 +55,30 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 
 ถ้า repo ไม่ได้แยก backend/frontend หรือมี service มากกว่านี้ ใช้ชื่อโฟลเดอร์ตามที่มีจริง หนึ่งโฟลเดอร์ต่อหนึ่ง image ต่อหนึ่ง job build
 
-## ปลายทาง deploy (ถามผู้ใช้ถ้ายังไม่รู้)
+## ปลายทาง deploy (ถามผู้ใช้ทุกครั้ง)
 
-| | A. เครื่องเดียว | B. Docker Swarm |
-|---|---|---|
-| ใช้เมื่อ | EC2/VM เครื่องเดียว ไม่มี Swarm | cluster ที่มี Swarmpit (เช่น coe-swarm) |
-| job deploy | `docker:<ver>` ตั้ง `DOCKER_HOST=ssh://$DEPLOY_HOST` แล้ว `docker compose pull` → `up -d --wait` | `alpine` + `curl jq gettext` ส่ง compose ที่ `envsubst` แล้วไป Swarmpit API แล้วสั่ง redeploy |
-| compose | `restart: unless-stopped`, `depends_on` + healthcheck, migrate เป็น service ที่รันจบ | `deploy:` (replicas, placement, `update_config` + `failure_action: rollback`, `restart_policy`), label อยู่ใต้ `deploy.labels` |
-| ไฟล์ถาวร | volume ของเครื่อง หรือ S3 | volume NFS (`driver_opts`) |
-| CI variables | `DEPLOY_HOST`, `SSH_PRIVATE_KEY` (File), `SSH_KNOWN_HOSTS` | `SWARMPIT_URL`, `SWARMPIT_TOKEN` |
+ถามด้วย AskUserQuestion ทุกครั้งว่า deploy ไปที่ไหน แม้ repo จะมี CI เดิมอยู่แล้ว (ของเดิมอาจกำลังจะย้าย) ตัวเลือก:
+
+| | A. Linux server / VM | B. Swarmpit (Docker Swarm) | C. OS อื่น หรือเครื่องที่ SSH เข้าไม่ได้ |
+|---|---|---|---|
+| ใช้เมื่อ | EC2, VM หรือเครื่อง Linux เครื่องเดียว ไม่มี Swarm | cluster ที่มี Swarmpit (เช่น coe-swarm) | Windows Server, macOS หรือเครื่องในวงแลนที่ runner กลางเข้าไม่ถึง |
+| job deploy | ตั้ง `DOCKER_HOST=ssh://$DEPLOY_HOST` แล้ว `docker compose pull` → `up -d --wait` | `curl jq gettext` ส่ง compose ที่ `envsubst` แล้วไป Swarmpit API แล้วสั่ง redeploy | ติดตั้ง runner บนเครื่องปลายทางเอง (GitLab Runner หรือ GitHub self-hosted runner) แล้ว job deploy รัน `docker compose` บนเครื่องนั้นตรง ๆ ไม่ผ่าน SSH |
+| compose | `restart: unless-stopped`, `depends_on` + healthcheck, migrate เป็น service ที่รันจบ | `deploy:` (replicas, placement, `update_config` + `failure_action: rollback`, `restart_policy`), label อยู่ใต้ `deploy.labels` | เหมือน A |
+| ไฟล์ถาวร | volume ของเครื่อง หรือ S3 | volume NFS (`driver_opts`) | volume ของเครื่อง |
+| CI variables | `DEPLOY_HOST`, `SSH_PRIVATE_KEY` (File), `SSH_KNOWN_HOSTS` | `SWARMPIT_URL`, `SWARMPIT_TOKEN` | ไม่ต้องมีค่า SSH ใช้ tag/label ของ runner แทน |
+
+ถามต่อตามคำตอบ (รวมในหน้าต่างเดียวกันได้):
+- **A:** สถาปัตยกรรม CPU ของเครื่อง (x86_64 หรือ ARM64 เช่น EC2 Graviton) ถ้า ARM ต้อง build ด้วย `--platform linux/arm64` หรือ build ทั้งสองแบบ
+- **B:** ชื่อ stack, label ของ node ที่จะวาง (`node.labels.*`), path ของ NFS
+- **C:** OS อะไร และเครื่องนั้นติดตั้ง Docker แบบไหน
+  - Windows: ต้องเป็น Docker Desktop หรือ Docker Engine ที่รัน **Linux container** (ผ่าน WSL2) image ในแม่แบบเป็น Linux ทั้งหมด ถ้าเป็น Windows container ใช้แม่แบบนี้ไม่ได้ ให้บอกผู้ใช้
+  - runner บน Windows รัน script ด้วย PowerShell คำสั่ง `export`, `printf`, `install` ต้องเขียนใหม่ ถ้าทำได้ให้ตั้ง runner ใน WSL2 แทน
+  - macOS: Docker Desktop หรือ Colima ใช้ได้ แต่เครื่อง Apple Silicon เป็น ARM64 (ดูข้อของ A)
+  - ถ้าผู้ใช้ไม่มีสิทธิ์ติดตั้ง runner บนเครื่องนั้น ให้บอกว่าแบบ C ทำไม่ได้ แล้วถามว่าจะย้ายไปแบบ A หรือ B ไหม
+
+แบบ C ใช้ไฟล์ CI ของ A แล้วแก้แค่ job deploy:
+- GitLab: เพิ่ม `tags: [<tag ของ runner>]`, ลบ `before_script` ส่วน SSH และ `DOCKER_HOST`
+- GitHub: `runs-on: [self-hosted, <label>]` และลบ step SSH
 
 ## ขั้นตอน
 
@@ -80,7 +95,7 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 ด้วย AskUserQuestion ในครั้งเดียว เฉพาะที่อ่านจาก repo ไม่ได้:
 - แพลตฟอร์ม CI (GitLab หรือ GitHub) ถ้าหาไม่เจอตามหัวข้อ "แพลตฟอร์ม CI"
 - (GitHub) registry: GHCR หรือ registry เดิมของทีม
-- ปลายทาง deploy (A หรือ B) และชื่อ stack
+- ปลายทาง deploy (A, B หรือ C) ตามหัวข้อ "ปลายทาง deploy" ถามทุกครั้ง พร้อมคำถามต่อของแบบนั้น
 - domain ของแต่ละ service และแบบเส้นทาง (แยก subdomain หรือ path เดียวกัน เช่น `/api/v1` → backend)
 - network ภายนอก (`public`, network ของ DB), entrypoint และ certresolver ของ Traefik
 - deploy อัตโนมัติหรือกดเอง (GitLab: `when: manual`, GitHub: environment ที่มี required reviewers)
@@ -128,14 +143,14 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 - tag image สองตัว: `${CI_COMMIT_SHA}` และ `latest` deploy ใช้ `latest`
 - path ของ image ตั้งเป็นตัวแปรที่ `variables:` ของ CI (`BACKEND_IMAGE`, `FRONTEND_IMAGE`) แล้ว compose อ่านตัวเดียวกัน
 - job deploy `rules.changes` = ทุกโฟลเดอร์ที่ build + `docker-compose.yml` + `.gitlab-ci.yml` และ `needs` job build แบบ `optional: true`
-- แบบ A ใส่ `resource_group: deploy` และ `environment` (name + url)
+- แบบ A และ C ใส่ `resource_group: deploy` และ `environment` (name + url)
 - ปิดท้าย deploy ด้วย echo URL ของแต่ละ service
 
 **compose ของ server**
 - image: `${BACKEND_IMAGE:-<registry>/<group>/<project>/backend}:latest`
 - env ที่ไม่ลับและไม่เปลี่ยนเขียนค่าตรง ๆ (`TZ=Asia/Bangkok`, domain, bucket) ค่าลับหรือค่าต่อเครื่องเขียน `VAR=${VAR}`
 - service ที่ใช้ env ชุดเดียวกัน (api, worker, migrate) ใช้ anchor `x-backend: &backend`
-- network ภายนอกประกาศ `external: true` service ที่รับ traffic อยู่ใน `public` และตั้ง `traefik.docker.network: public` (แบบ A) เมื่ออยู่หลาย network
+- network ภายนอกประกาศ `external: true` service ที่รับ traffic อยู่ใน `public` และตั้ง `traefik.docker.network: public` (แบบ A และ C) เมื่ออยู่หลาย network
 - ชื่อ router/service ของ Traefik ขึ้นต้นด้วยชื่อโปรเจกต์ (และ env เช่น `-uat`) กันชนกับ stack อื่น
 - service ที่เรียกกันภายในใช้ alias ที่ขึ้นต้นด้วยชื่อโปรเจกต์ (เช่น `steamkid-backend`) เพราะ network `public` มีหลาย stack ที่มี service ชื่อ `backend`
 

@@ -30,7 +30,7 @@ compose, Dockerfile และ `.dockerignore` ใช้แม่แบบใน 
 ใช้ tag ของ major version ที่ระบุชัด (`actions/checkout@v4`) ห้ามใช้ `@main` หรือ `@master`
 ถ้าผู้ใช้ต้องการเข้มขึ้น ล็อกด้วย commit SHA แล้วใส่ tag ไว้ในคอมเมนต์ (`uses: actions/checkout@<sha> # v4`)
 
-## .github/workflows/deploy.yml: ส่วน build (ใช้ทั้งแบบ A และ B)
+## .github/workflows/deploy.yml: ส่วน build (ใช้ทุกแบบ)
 
 ```yaml
 name: deploy
@@ -109,7 +109,7 @@ jobs:
 
 cache แบบ `type=gha` เก็บ cache ของทุก stage ไว้ใน GitHub ไม่ต้องตั้ง registry เพิ่ม
 
-## deploy แบบ A (เครื่องเดียว ผ่าน SSH)
+## deploy แบบ A (Linux server/VM ผ่าน SSH) และ C
 
 ```yaml
   deploy:
@@ -155,6 +155,9 @@ cache แบบ `type=gha` เก็บ cache ของทุก stage ไว้
 - `BACKEND_IMAGE`/`FRONTEND_IMAGE` ใน `env:` ระดับ workflow ส่งต่อให้ compose อัตโนมัติ
 - ต่างจาก GitLab: ตัวแปรของ GitHub ไม่เข้า environment ของ step เอง ต้องเขียนใน `env:` ของ job ทีละตัว ไม่งั้น compose ได้ค่าว่าง
 - GHCR เป็น private โดยค่าเริ่มต้น เครื่องปลายทางดึงได้เพราะ login อยู่ในฝั่ง client (`DOCKER_HOST=ssh://`) แต่ token ของ `GITHUB_TOKEN` ใช้ได้แค่ระหว่างที่ job รัน
+
+**แบบ C (self-hosted runner บนเครื่องปลายทาง):** job เดียวกันแต่ `runs-on: [self-hosted, <label>]` ลบ step `Set up SSH` และ `DOCKER_HOST` ออก
+ถ้าเครื่องเป็น Windows ให้ติดตั้ง runner ใน WSL2 จะได้ใช้ script bash ชุดเดิม ถ้าติดตั้งบน Windows ตรง ๆ ต้องใส่ `shell: bash` (Git Bash) ใน step
 
 ## deploy แบบ B (Swarm ผ่าน Swarmpit)
 
