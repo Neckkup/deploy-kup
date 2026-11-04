@@ -147,7 +147,7 @@ name: <project>
 x-backend: &backend
   image: ${BACKEND_IMAGE:-<registry>/<group>/<project>/backend}:latest
   environment:
-    - TZ=<timezone>
+    - TZ=Asia/Bangkok
     - BASE_DOMAIN=<domain>
     - DATABASE_URL=${DATABASE_URL}
     - <SECRET>=${<SECRET>}
@@ -157,7 +157,7 @@ services:
     image: ${FRONTEND_IMAGE:-<registry>/<group>/<project>/frontend}:latest
     restart: unless-stopped
     environment:
-      - TZ=<timezone>
+      - TZ=Asia/Bangkok
       - API_INTERNAL_URL=http://<project>-backend:8080
     depends_on:
       backend: { condition: service_healthy }
@@ -213,7 +213,7 @@ services:
   backend:
     image: ${BACKEND_IMAGE:-<registry>/<group>/<project>/backend}:latest
     environment:
-      - TZ=<timezone>
+      - TZ=Asia/Bangkok
       - DATABASE_URL=${DATABASE_URL}
     networks:
       - public
@@ -329,7 +329,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/api ./cmd/api
 FROM alpine:<ver>
 RUN apk add --no-cache ca-certificates tzdata wget && adduser -D -H -u 10001 app
 COPY --from=build /out/ /usr/local/bin/
-ENV API_ADDR=:8080 TZ=<timezone>
+ENV API_ADDR=:8080 TZ=Asia/Bangkok
 USER 10001
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 CMD wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1
@@ -357,7 +357,7 @@ RUN pnpm build
 
 FROM node:<ver>-alpine<ver>
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 TZ=<timezone>
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 TZ=Asia/Bangkok
 RUN apk add --no-cache tzdata wget && adduser -D -H -u 10001 app
 COPY --from=build --chown=10001 /app/public ./public
 COPY --from=build --chown=10001 /app/.next/standalone ./

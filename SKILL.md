@@ -35,7 +35,7 @@ description: วางโครงหรือปรับ CI/CD ของ GitLa
 - **ผู้ใช้วางตัวอย่างมา ให้ทำตามรูปแบบนั้น** ถามเฉพาะค่าที่ไม่รู้ ถ้าตัวอย่างมีจุดที่ขัดกับ "ห้ามทำ" ข้างล่าง ให้บอกแล้วถามว่าจะตามตัวอย่างหรือแก้
 - **สรุปแผนแล้วรอคำสั่งก่อนแก้ไฟล์** ตอบคำถามใน popup อย่างเดียวยังไม่นับเป็นคำสั่ง
 - **ห้ามใส่ค่าลับจริง** ลงไฟล์ใด ๆ ค่าลับอยู่ใน CI/CD Variables เท่านั้น
-- **ห้ามใส่ค่าเฉพาะขององค์กรหรือโปรเจกต์อื่นเป็นค่าเริ่มต้น** (registry, domain, ชื่อ cluster, certresolver, label ของ node, timezone, path ของ NFS) ทุกค่าใน `<...>` ของแม่แบบต้องอ่านจาก repo ที่กำลังทำ หรือถามผู้ใช้ ห้ามเติมจากตัวอย่างหรือจากโปรเจกต์ที่เคยทำ
+- **ห้ามใส่ค่าเฉพาะขององค์กรหรือโปรเจกต์อื่นเป็นค่าเริ่มต้น** (registry, domain, ชื่อ cluster, certresolver, label ของ node, path ของ NFS) ยกเว้น `TZ=Asia/Bangkok` ที่ใช้เป็นค่าเริ่มต้นได้ ทุกค่าใน `<...>` ของแม่แบบต้องอ่านจาก repo ที่กำลังทำ หรือถามผู้ใช้ ห้ามเติมจากตัวอย่างหรือจากโปรเจกต์ที่เคยทำ
 
 ## โครงเป้าหมาย
 
@@ -151,7 +151,7 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 
 **compose ของ server**
 - image: `${BACKEND_IMAGE:-<registry>/<group>/<project>/backend}:latest`
-- env ที่ไม่ลับและไม่เปลี่ยนเขียนค่าตรง ๆ (`TZ=<timezone>`, domain, bucket) ค่าลับหรือค่าต่อเครื่องเขียน `VAR=${VAR}`
+- env ที่ไม่ลับและไม่เปลี่ยนเขียนค่าตรง ๆ (`TZ=Asia/Bangkok`, domain, bucket) ค่าลับหรือค่าต่อเครื่องเขียน `VAR=${VAR}`
 - service ที่ใช้ env ชุดเดียวกัน (api, worker, migrate) ใช้ anchor `x-backend: &backend`
 - network ภายนอกประกาศ `external: true` service ที่รับ traffic อยู่ใน `public` และตั้ง `traefik.docker.network: public` (แบบ A และ C) เมื่ออยู่หลาย network
 - ชื่อ router/service ของ Traefik ขึ้นต้นด้วยชื่อโปรเจกต์กันชนกับ stack อื่น ถ้า cluster เดียวมีหลาย environment ของโปรเจกต์เดียวกัน ให้ถามผู้ใช้ว่าจะต่อชื่อ environment แบบไหน
