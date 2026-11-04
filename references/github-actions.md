@@ -22,7 +22,7 @@ compose, Dockerfile และ `.dockerignore` ใช้แม่แบบใน 
 
 ## สิ่งที่ต้องถามเพิ่ม (นอกจากข้อในขั้น 2 ของ SKILL.md)
 
-- registry: GHCR (`ghcr.io/<owner>/<repo>`) หรือ registry เดิมของทีม (เช่น `registry.rmutsv.app`)
+- registry: GHCR (`ghcr.io/<owner>/<repo>`) หรือ registry ของทีมเอง (เช่น `registry.example.com`)
 - deploy อัตโนมัติ หรือให้รออนุมัติผ่าน environment ที่มี required reviewers
 
 ## ล็อกเวอร์ชันของ action
@@ -41,7 +41,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: <ghcr.io หรือ registry.rmutsv.app>
+  REGISTRY: <ghcr.io หรือ registry ของทีม>
   BACKEND_IMAGE: <registry>/<owner>/<repo>/backend
   FRONTEND_IMAGE: <registry>/<owner>/<repo>/frontend
 

@@ -6,7 +6,7 @@ description: วางโครงหรือปรับ CI/CD ของ GitLa
 # deploy-kup
 
 วางไฟล์ build และ deploy ของ repo ให้เป็นแบบเดียวกันทุกโปรเจกต์: CI build image แยกฝั่ง push ขึ้น registry แล้ว deploy stack ที่อยู่หลัง Traefik
-แบบนี้มาจาก repo ที่ใช้งานจริง (`wrf/water-disasters`, `wrf/next.js-example` และ steamkid) แม่แบบอยู่ใน [references/templates.md](references/templates.md) (GitLab CI, compose, Dockerfile) และ [references/github-actions.md](references/github-actions.md) (ส่วน CI ของ GitHub)
+แบบนี้สรุปมาจาก repo ที่ใช้งานจริงหลายตัว แม่แบบอยู่ใน [references/templates.md](references/templates.md) (GitLab CI, compose, Dockerfile) และ [references/github-actions.md](references/github-actions.md) (ส่วน CI ของ GitHub)
 
 ## แพลตฟอร์ม CI
 
@@ -20,7 +20,7 @@ description: วางโครงหรือปรับ CI/CD ของ GitLa
 
 ดูว่าใช้แพลตฟอร์มไหนจาก:
 1. ไฟล์ CI ที่มีอยู่: `.gitlab-ci.yml` = GitLab, `.github/workflows/` = GitHub
-2. `git remote -v`: host `github.com` = GitHub, `gitlab.com` หรือ host ของ GitLab ที่ตั้งเอง (เช่น `git.rmutsv.app`) = GitLab
+2. `git remote -v`: host `github.com` = GitHub, `gitlab.com` หรือ host ของ GitLab ที่ตั้งเอง (เช่น `git.example.com`) = GitLab
 
 **ถ้าหาไม่เจอ** (ไม่มีไฟล์ CI และไม่มี remote, host ไม่รู้ว่าเป็นอะไร หรือสองทางให้ผลขัดกัน เช่น remote เป็น GitHub แต่มี `.gitlab-ci.yml`) ห้ามเดา ให้ถามด้วย AskUserQuestion ก่อนทำอย่างอื่น ว่าจะใช้ GitLab หรือ GitHub
 
@@ -35,6 +35,7 @@ description: วางโครงหรือปรับ CI/CD ของ GitLa
 - **ผู้ใช้วางตัวอย่างมา ให้ทำตามรูปแบบนั้น** ถามเฉพาะค่าที่ไม่รู้ ถ้าตัวอย่างมีจุดที่ขัดกับ "ห้ามทำ" ข้างล่าง ให้บอกแล้วถามว่าจะตามตัวอย่างหรือแก้
 - **สรุปแผนแล้วรอคำสั่งก่อนแก้ไฟล์** ตอบคำถามใน popup อย่างเดียวยังไม่นับเป็นคำสั่ง
 - **ห้ามใส่ค่าลับจริง** ลงไฟล์ใด ๆ ค่าลับอยู่ใน CI/CD Variables เท่านั้น
+- **ห้ามใส่ค่าเฉพาะขององค์กรหรือโปรเจกต์อื่นเป็นค่าเริ่มต้น** (registry, domain, ชื่อ cluster, certresolver, label ของ node, timezone, path ของ NFS) ทุกค่าใน `<...>` ของแม่แบบต้องอ่านจาก repo ที่กำลังทำ หรือถามผู้ใช้ ห้ามเติมจากตัวอย่างหรือจากโปรเจกต์ที่เคยทำ
 
 ## โครงเป้าหมาย
 
@@ -61,7 +62,7 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 
 | | A. VM / server Linux | B. Swarmpit (Docker Swarm) | C. OS อื่น หรือเครื่องที่ SSH เข้าไม่ได้ |
 |---|---|---|---|
-| ใช้เมื่อ | VM หรือเครื่อง Linux เครื่องเดียว ไม่ว่าจะอยู่ที่ cloud เจ้าไหนหรือในองค์กร ไม่มี Swarm | cluster ที่มี Swarmpit (เช่น coe-swarm) | Windows Server, macOS หรือเครื่องในวงแลนที่ runner กลางเข้าไม่ถึง |
+| ใช้เมื่อ | VM หรือเครื่อง Linux เครื่องเดียว ไม่ว่าจะอยู่ที่ cloud เจ้าไหนหรือในองค์กร ไม่มี Swarm | cluster ที่มี Swarmpit | Windows Server, macOS หรือเครื่องในวงแลนที่ runner กลางเข้าไม่ถึง |
 | job deploy | ตั้ง `DOCKER_HOST=ssh://$DEPLOY_HOST` แล้ว `docker compose pull` → `up -d --wait` | `curl jq gettext` ส่ง compose ที่ `envsubst` แล้วไป Swarmpit API แล้วสั่ง redeploy | ติดตั้ง runner บนเครื่องปลายทางเอง (GitLab Runner หรือ GitHub self-hosted runner) แล้ว job deploy รัน `docker compose` บนเครื่องนั้นตรง ๆ ไม่ผ่าน SSH |
 | compose | `restart: unless-stopped`, `depends_on` + healthcheck, migrate เป็น service ที่รันจบ | `deploy:` (replicas, placement, `update_config` + `failure_action: rollback`, `restart_policy`), label อยู่ใต้ `deploy.labels` | เหมือน A |
 | ไฟล์ถาวร | volume ของเครื่อง หรือ S3 | volume NFS (`driver_opts`) | volume ของเครื่อง |
@@ -150,11 +151,11 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 
 **compose ของ server**
 - image: `${BACKEND_IMAGE:-<registry>/<group>/<project>/backend}:latest`
-- env ที่ไม่ลับและไม่เปลี่ยนเขียนค่าตรง ๆ (`TZ=Asia/Bangkok`, domain, bucket) ค่าลับหรือค่าต่อเครื่องเขียน `VAR=${VAR}`
+- env ที่ไม่ลับและไม่เปลี่ยนเขียนค่าตรง ๆ (`TZ=<timezone>`, domain, bucket) ค่าลับหรือค่าต่อเครื่องเขียน `VAR=${VAR}`
 - service ที่ใช้ env ชุดเดียวกัน (api, worker, migrate) ใช้ anchor `x-backend: &backend`
 - network ภายนอกประกาศ `external: true` service ที่รับ traffic อยู่ใน `public` และตั้ง `traefik.docker.network: public` (แบบ A และ C) เมื่ออยู่หลาย network
 - ชื่อ router/service ของ Traefik ขึ้นต้นด้วยชื่อโปรเจกต์ (และ env เช่น `-uat`) กันชนกับ stack อื่น
-- service ที่เรียกกันภายในใช้ alias ที่ขึ้นต้นด้วยชื่อโปรเจกต์ (เช่น `steamkid-backend`) เพราะ network `public` มีหลาย stack ที่มี service ชื่อ `backend`
+- service ที่เรียกกันภายในใช้ alias ที่ขึ้นต้นด้วยชื่อโปรเจกต์ (เช่น `<project>-backend`) เพราะ network `public` มีหลาย stack ที่มี service ชื่อ `backend`
 
 **compose ของเครื่องพัฒนา** (เฉพาะเมื่อผู้ใช้เลือกเอาในขั้น 2)
 - `build:` จาก source, `env_file: ./backend/.env`, override เฉพาะค่าที่ต่างจากตอนรันนอก docker (host ของ DB เป็นชื่อ service)
