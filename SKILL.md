@@ -59,16 +59,18 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 
 ถามด้วย AskUserQuestion ทุกครั้งว่า deploy ไปที่ไหน แม้ repo จะมี CI เดิมอยู่แล้ว (ของเดิมอาจกำลังจะย้าย) ตัวเลือก:
 
-| | A. Linux server / VM | B. Swarmpit (Docker Swarm) | C. OS อื่น หรือเครื่องที่ SSH เข้าไม่ได้ |
+| | A. VM / server Linux | B. Swarmpit (Docker Swarm) | C. OS อื่น หรือเครื่องที่ SSH เข้าไม่ได้ |
 |---|---|---|---|
-| ใช้เมื่อ | EC2, VM หรือเครื่อง Linux เครื่องเดียว ไม่มี Swarm | cluster ที่มี Swarmpit (เช่น coe-swarm) | Windows Server, macOS หรือเครื่องในวงแลนที่ runner กลางเข้าไม่ถึง |
+| ใช้เมื่อ | VM หรือเครื่อง Linux เครื่องเดียว ไม่ว่าจะอยู่ที่ cloud เจ้าไหนหรือในองค์กร ไม่มี Swarm | cluster ที่มี Swarmpit (เช่น coe-swarm) | Windows Server, macOS หรือเครื่องในวงแลนที่ runner กลางเข้าไม่ถึง |
 | job deploy | ตั้ง `DOCKER_HOST=ssh://$DEPLOY_HOST` แล้ว `docker compose pull` → `up -d --wait` | `curl jq gettext` ส่ง compose ที่ `envsubst` แล้วไป Swarmpit API แล้วสั่ง redeploy | ติดตั้ง runner บนเครื่องปลายทางเอง (GitLab Runner หรือ GitHub self-hosted runner) แล้ว job deploy รัน `docker compose` บนเครื่องนั้นตรง ๆ ไม่ผ่าน SSH |
 | compose | `restart: unless-stopped`, `depends_on` + healthcheck, migrate เป็น service ที่รันจบ | `deploy:` (replicas, placement, `update_config` + `failure_action: rollback`, `restart_policy`), label อยู่ใต้ `deploy.labels` | เหมือน A |
 | ไฟล์ถาวร | volume ของเครื่อง หรือ S3 | volume NFS (`driver_opts`) | volume ของเครื่อง |
 | CI variables | `DEPLOY_HOST`, `SSH_PRIVATE_KEY` (File), `SSH_KNOWN_HOSTS` | `SWARMPIT_URL`, `SWARMPIT_TOKEN` | ไม่ต้องมีค่า SSH ใช้ tag/label ของ runner แทน |
 
 ถามต่อตามคำตอบ (รวมในหน้าต่างเดียวกันได้):
-- **A:** สถาปัตยกรรม CPU ของเครื่อง (x86_64 หรือ ARM64 เช่น EC2 Graviton) ถ้า ARM ต้อง build ด้วย `--platform linux/arm64` หรือ build ทั้งสองแบบ
+- **A:** ห้ามเดาว่าเป็น cloud หรือ distro ไหน ถามทั้งสองข้อ:
+  - OS ของ VM: Ubuntu, Debian, Amazon Linux, RHEL/Rocky/AlmaLinux หรืออื่น ๆ แล้วเตรียมเครื่องตาม [references/vm-os.md](references/vm-os.md)
+  - สถาปัตยกรรม CPU: x86_64 หรือ ARM64 (เช่น AWS Graviton, Oracle Ampere) ถ้า ARM ต้อง build ด้วย `--platform linux/arm64` หรือ build ทั้งสองแบบ
 - **B:** ชื่อ stack, label ของ node ที่จะวาง (`node.labels.*`), path ของ NFS
 - **C:** OS อะไร และเครื่องนั้นติดตั้ง Docker แบบไหน
   - Windows: ต้องเป็น Docker Desktop หรือ Docker Engine ที่รัน **Linux container** (ผ่าน WSL2) image ในแม่แบบเป็น Linux ทั้งหมด ถ้าเป็น Windows container ใช้แม่แบบนี้ไม่ได้ ให้บอกผู้ใช้
@@ -133,7 +135,7 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 ### 6. เอกสารและรายงาน
 
 - เขียนหรืออัปเดต `docs/ci-cd.md` ตามสกิล **docs-kup** (หัวข้อ ci-cd.md ใน page-templates) และแผนผังโฟลเดอร์ใน `README.md` ที่ root
-- รายงานผู้ใช้: ไฟล์ที่สร้าง/แก้, CI/CD variables ที่ต้องตั้งเอง, สิ่งที่ต้องเตรียมบนเครื่องปลายทาง (network, Traefik, DNS, SSH key), สิ่งที่ยังไม่ได้ทดสอบ
+- รายงานผู้ใช้: ไฟล์ที่สร้าง/แก้, CI/CD variables ที่ต้องตั้งเอง, สิ่งที่ต้องเตรียมบนเครื่องปลายทาง (ติดตั้ง Docker ตาม OS, network, Traefik, DNS, SSH key), สิ่งที่ยังไม่ได้ทดสอบ
 - commit เฉพาะเมื่อผู้ใช้สั่ง
 
 ## ข้อตกลงที่ใช้เสมอ
