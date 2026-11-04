@@ -1,12 +1,30 @@
 ---
 name: deploy-kup
-description: วางโครงหรือปรับ CI/CD ของ GitLab, docker compose, Dockerfile และ .dockerignore ของ repo ที่แยก backend/frontend ให้ build image ขึ้น registry แล้ว deploy ไปเครื่องเดียว (compose ผ่าน SSH) หรือ Docker Swarm (Swarmpit) หลัง Traefik ใช้เมื่อผู้ใช้ขอให้ทำ .gitlab-ci.yml, ตั้ง pipeline, เขียน docker-compose สำหรับ server หรือเครื่องพัฒนา, เขียน Dockerfile, ย้ายการ deploy หรือตรวจของเดิมว่าตรงตามแบบไหม
+description: วางโครงหรือปรับ CI/CD ของ GitLab CI หรือ GitHub Actions, docker compose, Dockerfile และ .dockerignore ของ repo ที่แยก backend/frontend ให้ build image ขึ้น registry แล้ว deploy ไปเครื่องเดียว (compose ผ่าน SSH) หรือ Docker Swarm (Swarmpit) หลัง Traefik ใช้เมื่อผู้ใช้ขอให้ทำ .gitlab-ci.yml หรือ GitHub workflow, ตั้ง pipeline, เขียน docker-compose สำหรับ server หรือเครื่องพัฒนา, เขียน Dockerfile, ย้ายการ deploy หรือตรวจของเดิมว่าตรงตามแบบไหม
 ---
 
 # deploy-kup
 
-วางไฟล์ build และ deploy ของ repo ให้เป็นแบบเดียวกันทุกโปรเจกต์: GitLab CI build image แยกฝั่ง push ขึ้น registry แล้ว deploy stack ที่อยู่หลัง Traefik
-แบบนี้มาจาก repo ที่ใช้งานจริง (`wrf/water-disasters`, `wrf/next.js-example` และ steamkid) แม่แบบทุกไฟล์อยู่ใน [references/templates.md](references/templates.md)
+วางไฟล์ build และ deploy ของ repo ให้เป็นแบบเดียวกันทุกโปรเจกต์: CI build image แยกฝั่ง push ขึ้น registry แล้ว deploy stack ที่อยู่หลัง Traefik
+แบบนี้มาจาก repo ที่ใช้งานจริง (`wrf/water-disasters`, `wrf/next.js-example` และ steamkid) แม่แบบอยู่ใน [references/templates.md](references/templates.md) (GitLab CI, compose, Dockerfile) และ [references/github-actions.md](references/github-actions.md) (ส่วน CI ของ GitHub)
+
+## แพลตฟอร์ม CI
+
+หลักการเหมือนกันทั้งสองแพลตฟอร์ม ต่างกันแค่ไฟล์ CI:
+
+| | GitLab | GitHub |
+|---|---|---|
+| ไฟล์ CI | `.gitlab-ci.yml` ตาม [templates.md](references/templates.md) | `.github/workflows/deploy.yml` ตาม [github-actions.md](references/github-actions.md) |
+| compose, Dockerfile, `.dockerignore` | [templates.md](references/templates.md) | [templates.md](references/templates.md) (ชุดเดียวกัน) |
+| ที่ตั้งค่าลับ | Settings → CI/CD → Variables | Settings → Secrets and variables → Actions |
+
+ดูว่าใช้แพลตฟอร์มไหนจาก:
+1. ไฟล์ CI ที่มีอยู่: `.gitlab-ci.yml` = GitLab, `.github/workflows/` = GitHub
+2. `git remote -v`: host `github.com` = GitHub, `gitlab.com` หรือ host ของ GitLab ที่ตั้งเอง (เช่น `git.rmutsv.app`) = GitLab
+
+**ถ้าหาไม่เจอ** (ไม่มีไฟล์ CI และไม่มี remote, host ไม่รู้ว่าเป็นอะไร หรือสองทางให้ผลขัดกัน เช่น remote เป็น GitHub แต่มี `.gitlab-ci.yml`) ห้ามเดา ให้ถามด้วย AskUserQuestion ก่อนทำอย่างอื่น ว่าจะใช้ GitLab หรือ GitHub
+
+ในเนื้อหาข้างล่าง คำว่า "CI/CD Variables" หมายถึงที่ตั้งค่าลับของแพลตฟอร์มนั้น และ `rules.changes` ของ GitLab ตรงกับ `paths-filter` ของ GitHub
 
 ## กฎสำคัญ
 
@@ -51,8 +69,8 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 
 ### 1. สำรวจ (อ่านอย่างเดียว)
 
-- `git status`, `git log -5`, `git remote -v` (ได้ host ของ GitLab และ path ของ registry)
-- ไฟล์เดิม: `.gitlab-ci.yml`, compose ทุกตัว, Dockerfile, `.dockerignore`, `.env.example`, `.gitignore`
+- `git status`, `git log -5`, `git remote -v` (ได้แพลตฟอร์ม, host และ path ของ registry) แล้วตัดสินแพลตฟอร์มตามหัวข้อ "แพลตฟอร์ม CI"
+- ไฟล์เดิม: `.gitlab-ci.yml`, `.github/workflows/*`, compose ทุกตัว, Dockerfile, `.dockerignore`, `.env.example`, `.gitignore`
 - แต่ละฝั่ง: ภาษา/framework, คำสั่ง build และ start, พอร์ต, endpoint สุขภาพ (`/healthz`, `/readyz`, หน้า login), process แยก (worker, migrate, cron)
 - ตัวแปรที่โค้ดอ่านจริง: `grep -rhoE 'Getenv\("[A-Z_]+"|process\.env\.[A-Z_]+|import\.meta\.env\.[A-Z_]+'` เทียบกับ `.env.example`
 - ค่าที่ฝัง ณ ตอน build (`VITE_*`, `NEXT_PUBLIC_*`) ต้องส่งเป็น `--build-arg` ไม่ใช่ env ของ container
@@ -60,10 +78,12 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 ### 2. ถามค่าที่ไม่รู้
 
 ด้วย AskUserQuestion ในครั้งเดียว เฉพาะที่อ่านจาก repo ไม่ได้:
+- แพลตฟอร์ม CI (GitLab หรือ GitHub) ถ้าหาไม่เจอตามหัวข้อ "แพลตฟอร์ม CI"
+- (GitHub) registry: GHCR หรือ registry เดิมของทีม
 - ปลายทาง deploy (A หรือ B) และชื่อ stack
 - domain ของแต่ละ service และแบบเส้นทาง (แยก subdomain หรือ path เดียวกัน เช่น `/api/v1` → backend)
 - network ภายนอก (`public`, network ของ DB), entrypoint และ certresolver ของ Traefik
-- deploy อัตโนมัติหรือกดเอง (`when: manual`)
+- deploy อัตโนมัติหรือกดเอง (GitLab: `when: manual`, GitHub: environment ที่มี required reviewers)
 - compose ของเครื่องพัฒนา: จะเอาหรือไม่ และเอาแบบไหน ถามทุกครั้งแม้ repo จะยังไม่มี ห้ามสร้างเอง ตัวเลือก:
   - ทั้ง stack ใน docker (`docker-compose.local.yml`)
   - เฉพาะบริการที่ app ต้องใช้ (`backend/docker-compose.yml`) แล้วรัน app บนเครื่องเอง
@@ -83,7 +103,7 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 
 ### 4. เขียนไฟล์
 
-ตามแม่แบบใน [references/templates.md](references/templates.md) และข้อตกลงข้างล่าง คอมเมนต์ในไฟล์ใช้ภาษาเดียวกับคอมเมนต์ที่มีอยู่ใน repo
+ตามแม่แบบใน [references/templates.md](references/templates.md) (และ [references/github-actions.md](references/github-actions.md) ถ้าเป็น GitHub) และข้อตกลงข้างล่าง คอมเมนต์ในไฟล์ใช้ภาษาเดียวกับคอมเมนต์ที่มีอยู่ใน repo
 
 ### 5. ตรวจ
 
@@ -93,6 +113,7 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 4. บรรทัด `script:` ที่มี `: ` (เช่น `echo "URL: ..."`) ต้องครอบทั้งบรรทัดด้วย `'...'` ไม่งั้น YAML อ่านเป็น map แล้ว pipeline ไม่ขึ้น
 5. ทุก `${VAR}` ใน compose มีในตาราง CI/CD variables และใน `backend/.env.example`
 6. ทุก path ใน `rules.changes` มีอยู่จริง
+7. (GitHub) ข้อตรวจเพิ่มท้าย [references/github-actions.md](references/github-actions.md)
 
 ### 6. เอกสารและรายงาน
 
@@ -102,7 +123,7 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 
 ## ข้อตกลงที่ใช้เสมอ
 
-**CI**
+**CI** (เขียนแบบ GitLab ฝั่ง GitHub ใช้ตารางเทียบใน [github-actions.md](references/github-actions.md))
 - job build หนึ่งตัวต่อหนึ่งโฟลเดอร์ `rules` = branch `main` + `changes: [<dir>/**, .gitlab-ci.yml]`
 - tag image สองตัว: `${CI_COMMIT_SHA}` และ `latest` deploy ใช้ `latest`
 - path ของ image ตั้งเป็นตัวแปรที่ `variables:` ของ CI (`BACKEND_IMAGE`, `FRONTEND_IMAGE`) แล้ว compose อ่านตัวเดียวกัน

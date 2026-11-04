@@ -1,8 +1,8 @@
 # deploy-kup
 
-สกิลของ Claude Code สำหรับวางโครงหรือปรับ CI/CD ของ GitLab, docker compose, Dockerfile และ .dockerignore ของ repo ที่แยก backend/frontend ให้ build image ขึ้น registry แล้ว deploy ไปเครื่องเดียว (compose ผ่าน SSH) หรือ Docker Swarm (Swarmpit) หลัง Traefik
+สกิลของ Claude Code สำหรับวางโครงหรือปรับ CI/CD ของ GitLab CI หรือ GitHub Actions, docker compose, Dockerfile และ .dockerignore ของ repo ที่แยก backend/frontend ให้ build image ขึ้น registry แล้ว deploy ไปเครื่องเดียว (compose ผ่าน SSH) หรือ Docker Swarm (Swarmpit) หลัง Traefik
 
-ขั้นตอนและข้อตกลงอยู่ใน [SKILL.md](SKILL.md) แม่แบบของทุกไฟล์อยู่ใน [references/templates.md](references/templates.md)
+ขั้นตอนและข้อตกลงอยู่ใน [SKILL.md](SKILL.md) แม่แบบอยู่ใน [references/templates.md](references/templates.md) และส่วน CI ของ GitHub อยู่ใน [references/github-actions.md](references/github-actions.md)
 เอกสาร `docs/ci-cd.md` ของ repo เขียนด้วยสกิล [docs-kup](https://github.com/Neckkup/docs-kup)
 
 ## ติดตั้ง
