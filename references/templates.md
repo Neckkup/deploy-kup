@@ -249,6 +249,8 @@ volumes:
 
 ## docker-compose.local.yml
 
+ใช้เมื่อผู้ใช้เลือกเอา compose ของเครื่องพัฒนาในขั้น 2 เท่านั้น
+
 ```yaml
 # เครื่องพัฒนา: ทั้ง stack ใน docker ค่าตั้งของ backend อยู่ที่ backend/.env (คัดลอกจาก backend/.env.example)
 #   docker compose -f docker-compose.local.yml up -d --build

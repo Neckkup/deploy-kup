@@ -23,12 +23,12 @@ description: วางโครงหรือปรับ CI/CD ของ GitLa
 ```
 .gitlab-ci.yml              ← build-backend, build-frontend, deploy
 docker-compose.yml          ← server: ดึง image จาก registry, label ของ Traefik, network ภายนอก
-docker-compose.local.yml    ← ทั้ง stack บนเครื่องพัฒนา build จาก source, ค่าจาก backend/.env
+docker-compose.local.yml    ← (ถ้าผู้ใช้เอา) ทั้ง stack บนเครื่องพัฒนา build จาก source, ค่าจาก backend/.env
 backend/
 ├── Dockerfile              ← multi-stage, ล็อกเวอร์ชัน, user ไม่ใช่ root, HEALTHCHECK
 ├── .dockerignore
 ├── .env.example            ← ทุกตัวแปรที่ backend อ่าน ค่าสำหรับเครื่องพัฒนาเท่านั้น
-└── docker-compose.yml      ← (ถ้า dev รัน app บนเครื่อง) เฉพาะ DB, S3, mail ฯลฯ
+└── docker-compose.yml      ← (ถ้าผู้ใช้เอา) เฉพาะ DB, S3, mail ฯลฯ ให้ dev รัน app บนเครื่องเอง
 frontend/
 ├── Dockerfile
 └── .dockerignore
@@ -64,6 +64,11 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 - domain ของแต่ละ service และแบบเส้นทาง (แยก subdomain หรือ path เดียวกัน เช่น `/api/v1` → backend)
 - network ภายนอก (`public`, network ของ DB), entrypoint และ certresolver ของ Traefik
 - deploy อัตโนมัติหรือกดเอง (`when: manual`)
+- compose ของเครื่องพัฒนา: จะเอาหรือไม่ และเอาแบบไหน ถามทุกครั้งแม้ repo จะยังไม่มี ห้ามสร้างเอง ตัวเลือก:
+  - ทั้ง stack ใน docker (`docker-compose.local.yml`)
+  - เฉพาะบริการที่ app ต้องใช้ (`backend/docker-compose.yml`) แล้วรัน app บนเครื่องเอง
+  - ทั้งสองแบบ (ใช้ชื่อ project และ volume เดียวกัน เปิดพร้อมกันไม่ได้)
+  - ไม่เอา
 
 ### 3. สรุปแผนแล้วรอคำสั่ง
 
@@ -83,7 +88,7 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 ### 5. ตรวจ
 
 1. `docker compose -f docker-compose.yml config` ผ่าน ทั้งตอนไม่ตั้งตัวแปร (ได้ path image ค่าสำรอง) และตอนตั้ง `BACKEND_IMAGE`/`FRONTEND_IMAGE`
-2. `docker compose -f docker-compose.local.yml config` ผ่าน
+2. `docker compose -f docker-compose.local.yml config` ผ่าน (ถ้ามี)
 3. `docker build backend` และ `docker build frontend` ผ่าน ถ้าไม่ได้รันจริงให้บอกผู้ใช้
 4. บรรทัด `script:` ที่มี `: ` (เช่น `echo "URL: ..."`) ต้องครอบทั้งบรรทัดด้วย `'...'` ไม่งั้น YAML อ่านเป็น map แล้ว pipeline ไม่ขึ้น
 5. ทุก `${VAR}` ใน compose มีในตาราง CI/CD variables และใน `backend/.env.example`
@@ -113,7 +118,7 @@ docs/ci-cd.md               ← เขียนด้วยสกิล docs-kup
 - ชื่อ router/service ของ Traefik ขึ้นต้นด้วยชื่อโปรเจกต์ (และ env เช่น `-uat`) กันชนกับ stack อื่น
 - service ที่เรียกกันภายในใช้ alias ที่ขึ้นต้นด้วยชื่อโปรเจกต์ (เช่น `steamkid-backend`) เพราะ network `public` มีหลาย stack ที่มี service ชื่อ `backend`
 
-**compose ของเครื่องพัฒนา**
+**compose ของเครื่องพัฒนา** (เฉพาะเมื่อผู้ใช้เลือกเอาในขั้น 2)
 - `build:` จาก source, `env_file: ./backend/.env`, override เฉพาะค่าที่ต่างจากตอนรันนอก docker (host ของ DB เป็นชื่อ service)
 - เปิด port ออกเครื่อง, DB/S3/mail ใช้ image ล็อกเวอร์ชัน และ healthcheck
 
